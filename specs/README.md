@@ -3,6 +3,8 @@
 This folder is the documentation home for the platform's phased delivery. Each
 completed phase ships with a detailed specification (see the per-phase files).
 
+Start with the [Overview](overview.md) for the end-to-end picture.
+
 ## The pipeline
 
 ```mermaid
@@ -25,6 +27,9 @@ flowchart LR
 
 Detailed specs:
 
+- [Overview](overview.md)
+- [Phase 1 — Foundation](phase-1-foundation.md)
+- [Phase 2 — Tech Spec generation](phase-2-tech-spec.md)
 - [Phase 3 — OpenSpec generation](phase-3-openspec.md)
 - [Phase 4 — Task orchestration](phase-4-orchestration.md)
 - [Phase 5 — VS Code bridge](phase-5-vscode-bridge.md)
@@ -63,6 +68,8 @@ cd dashboard
 .venv/Scripts/python.exe -m pytest -q
 ```
 
+- `tests/test_security.py`, `tests/test_rbac.py`, `tests/test_crud_service.py` — Phase 1
+- `tests/test_tech_spec.py` — Phase 2
 - `tests/test_openspec.py` — Phase 3
 - `tests/test_orchestrator.py` — Phase 4
 - `tests/test_agent_bridge.py` — Phase 5
