@@ -1,0 +1,11 @@
+services:
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: tata_dashboard
+    env_file:
+      - ./dashboard/.env
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

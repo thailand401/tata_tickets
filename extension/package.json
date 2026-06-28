@@ -1,0 +1,64 @@
+{
+  "name": "tata-agent-bridge",
+  "displayName": "Tata Agent Bridge",
+  "description": "Bridge between the Tata AI Software Factory dashboard and VS Code. Pulls assigned tasks and pushes progress, logs, commits, reviews and errors. Does not manage tickets — bridge only.",
+  "version": "0.1.0",
+  "publisher": "tata",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "tata.login", "title": "Tata: Login to Dashboard" },
+      { "command": "tata.logout", "title": "Tata: Logout" },
+      { "command": "tata.pullTask", "title": "Tata: Pull Next Task" },
+      { "command": "tata.pushProgress", "title": "Tata: Push Progress" },
+      { "command": "tata.pushLog", "title": "Tata: Push Log" },
+      { "command": "tata.pushCommit", "title": "Tata: Push Commit" },
+      { "command": "tata.pushReview", "title": "Tata: Push Review" },
+      { "command": "tata.pushError", "title": "Tata: Push Error" },
+      { "command": "tata.complete", "title": "Tata: Complete Task" },
+      { "command": "tata.sync", "title": "Tata: Sync Current Task" }
+    ],
+    "configuration": {
+      "title": "Tata Agent Bridge",
+      "properties": {
+        "tata.dashboardUrl": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "Base URL of the Tata dashboard."
+        },
+        "tata.categories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Task categories this worker will pull (empty = any)."
+        },
+        "tata.workspaceId": {
+          "type": "string",
+          "default": "",
+          "description": "Optional workspace id to scope pulled tasks."
+        },
+        "tata.syncIntervalMs": {
+          "type": "number",
+          "default": 5000,
+          "description": "Realtime sync polling interval in milliseconds."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}

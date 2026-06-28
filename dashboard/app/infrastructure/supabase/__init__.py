@@ -1,0 +1,1 @@
+"""Supabase infrastructure: client + repositories."""
