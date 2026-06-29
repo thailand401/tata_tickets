@@ -11,16 +11,20 @@ from typing import Any
 from fastapi import APIRouter, Depends, Response
 
 from app.application.services.agent_bridge import AgentBridgeService
+from app.application.services.coding_agent import CodingAgentService
 from app.core.security import AuthContext
 from app.presentation.api.v1.dependencies import get_auth, optional_workspace
 from app.presentation.api.v1.schemas import (
+    AgentAttemptIn,
     AgentCommit,
     AgentComplete,
     AgentError,
     AgentLog,
+    AgentPlanIn,
     AgentProgress,
     AgentPull,
     AgentReview,
+    AgentSessionFinish,
 )
 
 router = APIRouter(prefix="/agent", tags=["agent-bridge"])
@@ -99,4 +103,56 @@ def push_complete(
 ) -> dict[str, Any]:
     return AgentBridgeService().push_complete(
         auth.user_id, run_id, summary=body.summary, result=body.result
+    )
+
+
+# =====================================================================
+# Coding agent (Phase 6): context + session/attempt persistence
+# =====================================================================
+@router.get("/tasks/{run_id}/context")
+def get_context(run_id: str, auth: AuthContext = Depends(get_auth)) -> dict[str, Any]:
+    return CodingAgentService().get_context(auth.user_id, run_id)
+
+
+@router.post("/tasks/{run_id}/agent/session")
+def start_session(run_id: str, auth: AuthContext = Depends(get_auth)) -> dict[str, Any]:
+    return CodingAgentService().start_session(auth.user_id, run_id)
+
+
+@router.get("/agent/sessions/{session_id}")
+def get_session(
+    session_id: str, auth: AuthContext = Depends(get_auth)
+) -> dict[str, Any]:
+    return CodingAgentService().get_session(auth.user_id, session_id)
+
+
+@router.post("/agent/sessions/{session_id}/plan")
+def record_plan(
+    session_id: str, body: AgentPlanIn, auth: AuthContext = Depends(get_auth)
+) -> dict[str, Any]:
+    return CodingAgentService().record_plan(auth.user_id, session_id, plan=body.plan)
+
+
+@router.post("/agent/sessions/{session_id}/attempt")
+def record_attempt(
+    session_id: str, body: AgentAttemptIn, auth: AuthContext = Depends(get_auth)
+) -> dict[str, Any]:
+    return CodingAgentService().record_attempt(
+        auth.user_id,
+        session_id,
+        iteration=body.iteration,
+        phase=body.phase,
+        status=body.status,
+        compile_output=body.compile_output,
+        files=body.files,
+        error=body.error,
+    )
+
+
+@router.post("/agent/sessions/{session_id}/finish")
+def finish_session(
+    session_id: str, body: AgentSessionFinish, auth: AuthContext = Depends(get_auth)
+) -> dict[str, Any]:
+    return CodingAgentService().finish_session(
+        auth.user_id, session_id, status=body.status, summary=body.summary
     )

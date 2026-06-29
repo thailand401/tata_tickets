@@ -9,6 +9,7 @@
 
 import * as vscode from "vscode";
 import { DashboardClient, TaskRun } from "./api";
+import { runAgent } from "./agent/agent";
 import { RealtimeSync } from "./realtime";
 
 const TOKEN_KEY = "tata.accessToken";
@@ -25,6 +26,15 @@ function config() {
     categories: c.get<string[]>("categories", []),
     workspaceId: c.get<string>("workspaceId", ""),
     syncIntervalMs: c.get<number>("syncIntervalMs", 5000),
+    codingStandardPath: c.get<string>("codingStandardPath", "CODING_STANDARD.md"),
+    compileCommand: c.get<string>("compileCommand", ""),
+    testCommand: c.get<string>("testCommand", ""),
+    maxFixIterations: c.get<number>("maxFixIterations", 5),
+    commitMessageTemplate: c.get<string>(
+      "commitMessageTemplate",
+      "feat({category}): {task_key} {title}",
+    ),
+    autoCommit: c.get<boolean>("autoCommit", true),
   };
 }
 
@@ -103,6 +113,44 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.showInformationMessage(
       `Tata: pulled ${task.task_key} — ${task.title} (${task.category}).`,
     );
+  });
+
+  register("tata.runAgent", async () => {
+    const c = await getClient(context);
+    let task = activeTask;
+    if (!task) {
+      task = (await c.pullNext(config().categories)) ?? undefined;
+      if (!task) {
+        vscode.window.showInformationMessage("Tata: no ready task to run the agent on.");
+        return;
+      }
+      activeTask = task;
+      refreshStatus();
+      startSync(context);
+    }
+    const cfg = config();
+    if (!cfg.compileCommand.trim()) {
+      vscode.window.showErrorMessage(
+        "Tata: set `tata.compileCommand` in settings before running the agent.",
+      );
+      return;
+    }
+    const outcome = await runAgent(c, task, {
+      codingStandardPath: cfg.codingStandardPath,
+      compileCommand: cfg.compileCommand,
+      testCommand: cfg.testCommand,
+      maxFixIterations: cfg.maxFixIterations,
+      commitMessageTemplate: cfg.commitMessageTemplate,
+      autoCommit: cfg.autoCommit,
+    });
+    if (outcome.status === "succeeded") {
+      vscode.window.showInformationMessage(
+        `Tata: ${task.task_key} completed — ${outcome.summary}`,
+      );
+    } else {
+      vscode.window.showWarningMessage(`Tata: agent stopped — ${outcome.summary}`);
+    }
+    await refreshActive(context);
   });
 
   register("tata.pushProgress", async () => {
@@ -193,6 +241,25 @@ function requireActive(): TaskRun {
     throw new Error("No active task. Pull a task first.");
   }
   return activeTask;
+}
+
+/** Re-sync the active task after the agent runs; clear it if it went terminal. */
+async function refreshActive(context: vscode.ExtensionContext): Promise<void> {
+  if (!activeTask) {
+    return;
+  }
+  try {
+    const c = await getClient(context);
+    const { run } = await c.sync(activeTask.id);
+    const terminal = ["succeeded", "cancelled", "dead"].includes(run.state);
+    activeTask = terminal ? undefined : run;
+    if (terminal) {
+      stopSync();
+    }
+  } catch {
+    // ignore — status bar keeps its last known value
+  }
+  refreshStatus();
 }
 
 function startSync(context: vscode.ExtensionContext): void {

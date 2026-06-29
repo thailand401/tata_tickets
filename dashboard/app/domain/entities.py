@@ -8,17 +8,35 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 from app.domain.enums import (
+    AgentAttemptPhase,
+    AgentAttemptStatus,
+    AgentSessionStatus,
     ArtifactKind,
+    BackupKind,
+    BackupStatus,
+    DeployEnv,
+    DeployStatus,
+    DeployTrigger,
     GenerationStatus,
+    HealthStatus,
+    KnowledgeEdgeKind,
+    KnowledgeKind,
     RegistryStatus,
+    RepairGate,
+    RepairResult,
+    RepairSessionStatus,
     RunState,
     SpecBundleStatus,
     SpecStatus,
     TaskCategory,
     TaskState,
+    TestCaseStatus,
+    TestKind,
+    TestPlanStatus,
     TicketPriority,
     TicketStatus,
 )
+
 
 class _Entity(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -122,6 +140,7 @@ class Agent(_Entity):
     name: str
     slug: str
     description: str | None = None
+    role: str | None = None
     config: dict = {}
     default_model_id: UUID | None = None
     status: RegistryStatus = RegistryStatus.DRAFT
@@ -319,4 +338,221 @@ class TaskLog(_Entity):
     kind: str = "log"  # log | progress | commit | review | error | state
     message: str = ""
     data: dict = {}
+    created_at: datetime | None = None
+
+
+# =====================================================================
+# Phase 6 — Autonomous coding agent
+# =====================================================================
+class AgentSession(_Entity):
+    """One run of the coding-agent loop (plan -> code -> compile -> fix -> commit)."""
+
+    id: UUID
+    run_id: UUID
+    bundle_id: UUID | None = None
+    workspace_id: UUID | None = None
+    status: AgentSessionStatus = AgentSessionStatus.PLANNING
+    plan: dict = {}
+    summary: str = ""
+    attempts_count: int = 0
+    last_error: str | None = None
+    created_by: UUID | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class AgentAttempt(_Entity):
+    """A single attempt within the agent loop (one code/compile/fix iteration)."""
+
+    id: UUID
+    session_id: UUID
+    iteration: int = 1
+    phase: AgentAttemptPhase
+    status: AgentAttemptStatus
+    compile_output: str = ""
+    files: list[dict] = []
+    error: str | None = None
+    created_at: datetime | None = None
+
+
+# =====================================================================
+# Phase 8 — Test generation
+# =====================================================================
+class TestPlan(_Entity):
+    """A generated test plan derived from an OpenSpec bundle.
+
+    Documentation only — describes the suites, cases, mocks, coverage targets,
+    benchmarks and the rendered report. Never executed source code.
+    """
+
+    id: UUID
+    bundle_id: UUID
+    workspace_id: UUID | None = None
+    title: str
+    slug: str = ""
+    status: TestPlanStatus = TestPlanStatus.DRAFT
+    coverage_target: int = 80
+    case_count: int = 0
+    suite_count: int = 0
+    error: str | None = None
+    created_by: UUID | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class TestSuite(_Entity):
+    """One suite of a test plan (unit, integration, api, regression, ...)."""
+
+    id: UUID
+    plan_id: UUID
+    kind: TestKind
+    title: str
+    framework: str = ""
+    summary: str = ""
+    mocks: list[str] = []
+    data: dict = {}
+    created_at: datetime | None = None
+
+
+class TestCase(_Entity):
+    """A single planned test case inside a suite (documentation only)."""
+
+    id: UUID
+    suite_id: UUID
+    plan_id: UUID
+    name: str
+    given: str = ""
+    when: str = ""
+    then: str = ""
+    kind: TestKind = TestKind.UNIT
+    status: TestCaseStatus = TestCaseStatus.PLANNED
+    created_at: datetime | None = None
+
+
+# =====================================================================
+# Phase 9 — Self-healing loop
+# =====================================================================
+class RepairSession(_Entity):
+    """One self-healing run for a task run: receive errors -> fix loop -> commit."""
+
+    id: UUID
+    run_id: UUID
+    bundle_id: UUID | None = None
+    workspace_id: UUID | None = None
+    status: RepairSessionStatus = RepairSessionStatus.RECEIVING
+    errors: str = ""
+    summary: str = ""
+    iterations_count: int = 0
+    max_iterations: int = 5
+    last_error: str | None = None
+    commit_sha: str | None = None
+    created_by: UUID | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class RepairStep(_Entity):
+    """One gate within the loop (compile/review/test/fix/commit), pass or fail."""
+
+    id: UUID
+    session_id: UUID
+    iteration: int = 1
+    gate: RepairGate
+    result: RepairResult
+    output: str = ""
+    files: list[dict] = []
+    error: str | None = None
+    created_at: datetime | None = None
+
+
+# =====================================================================
+# Phase 10 — Knowledge Graph
+# =====================================================================
+class KnowledgeNode(_Entity):
+    """One node in the project knowledge graph.
+
+    A small, typed fact about the project (an api, entity, table, rule,
+    convention, …) so the agent can fetch only the relevant context instead of
+    reading the whole source.
+    """
+
+    id: UUID
+    workspace_id: UUID | None = None
+    bundle_id: UUID | None = None
+    kind: KnowledgeKind
+    key: str
+    title: str
+    summary: str = ""
+    tags: list[str] = []
+    data: dict = {}
+    created_by: UUID | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class KnowledgeEdge(_Entity):
+    """A directed relationship between two knowledge nodes."""
+
+    id: UUID
+    workspace_id: UUID | None = None
+    source_id: UUID
+    target_id: UUID
+    kind: KnowledgeEdgeKind = KnowledgeEdgeKind.RELATES_TO
+    weight: float = 1.0
+    created_at: datetime | None = None
+
+
+# =====================================================================
+# Phase 12 — Deploy & operate
+# =====================================================================
+class Deployment(_Entity):
+    """One release of a bundle to an environment: build -> deploy -> healthy."""
+
+    id: UUID
+    workspace_id: UUID | None = None
+    bundle_id: UUID | None = None
+    environment: DeployEnv = DeployEnv.STAGING
+    version: str
+    image: str = ""
+    commit_sha: str | None = None
+    trigger: DeployTrigger = DeployTrigger.MANUAL
+    status: DeployStatus = DeployStatus.PENDING
+    replicas: int = 1
+    health: HealthStatus = HealthStatus.DOWN
+    previous_id: UUID | None = None
+    summary: str = ""
+    created_by: UUID | None = None
+    deployed_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class Backup(_Entity):
+    """A database/artifacts snapshot that a deployment can be restored from."""
+
+    id: UUID
+    workspace_id: UUID | None = None
+    kind: BackupKind = BackupKind.FULL
+    location: str = ""
+    size_bytes: int = 0
+    status: BackupStatus = BackupStatus.PENDING
+    deployment_id: UUID | None = None
+    created_by: UUID | None = None
+    created_at: datetime | None = None
+
+
+class WebhookEvent(_Entity):
+    """A normalized GitHub/GitLab push/release event that may auto-deploy."""
+
+    id: UUID
+    workspace_id: UUID | None = None
+    provider: DeployTrigger = DeployTrigger.GITHUB
+    event: str = "push"
+    ref: str = ""
+    commit_sha: str | None = None
+    deployment_id: UUID | None = None
     created_at: datetime | None = None

@@ -13,6 +13,7 @@ flowchart LR
     B -->|Phase 3| C[OpenSpec bundle<br/>proposal · requirements · tasks ·<br/>architecture · migration · checklist]
     C -->|Phase 4| D[Task orchestration<br/>queue · retry · timeout · priority ·<br/>dependency · parallel · resume · cancel · log]
     D -->|Phase 5| E[VS Code bridge<br/>pull task · push progress/log/commit/<br/>review/error · realtime sync]
+    E -->|Phase 6| F[Autonomous coding agent<br/>plan · code · compile · fix · commit<br/>no review]
     A0[Auth · RBAC · CRUD · monitoring] -.foundation.- A
 ```
 
@@ -28,6 +29,8 @@ and observability — that every later phase depends on.
 | 3 | OpenSpec generation | Tech Spec version | Six-document OpenSpec bundle | [phase-3-openspec.md](phase-3-openspec.md) |
 | 4 | Task orchestration | OpenSpec `tasks` DAG | Scheduled, controlled task runs | [phase-4-orchestration.md](phase-4-orchestration.md) |
 | 5 | VS Code bridge | Task runs | Pull/push between editor & dashboard | [phase-5-vscode-bridge.md](phase-5-vscode-bridge.md) |
+| 6 | Autonomous coding agent | Task run | Planned, compiled, committed code (no review) | [phase-6-coding-agent.md](phase-6-coding-agent.md) |
+| 10 | Knowledge graph | OpenSpec bundle | Typed nodes/edges; agent fetches only relevant context | [phase-10-knowledge-graph.md](phase-10-knowledge-graph.md) |
 
 ## Architecture principles (apply to every phase)
 
@@ -52,7 +55,7 @@ dashboard/
     application/     services, RBAC, retry, recorder, openspec/orchestration logic
     infrastructure/  Supabase, auth, LLM client, realtime
     presentation/    REST API (api/v1) + NiceGUI UI (ui/)
-  migrations/        0001..0006 SQL (apply in order)
+  migrations/        0001..0007 SQL (apply in order)
   tests/             offline tests per phase
 extension/           VS Code bridge (TypeScript) — Phase 5
 specs/               these documents
@@ -70,9 +73,11 @@ specs/               these documents
 | `tech_specs`, `tech_spec_versions` | 2 | Free-text → structured spec (versioned) |
 | `spec_bundles`, `spec_artifacts` | 3 | OpenSpec change set + its six documents |
 | `task_runs`, `task_logs` | 4/5 | Orchestrated runs + log/progress/commit/review/error/state |
+| `agent_sessions`, `agent_attempts` | 6 | One agent loop per task + its plan/code/compile/fix/commit attempts |
+| `kg_nodes`, `kg_edges` | 10 | Knowledge graph: typed facts (api/entity/db/arch/rule/prompt/convention/history/dependency) + relations |
 
 Migrations apply in order: `0001` → `0002` (RLS) → `0003` (seed) → `0004` →
-`0005` → `0006`.
+`0005` → `0006` → `0007` → … → `0010`.
 
 ## Run & test
 
@@ -91,3 +96,4 @@ uvicorn app.main:app --reload
 | `tests/test_openspec.py` | 3 |
 | `tests/test_orchestrator.py` | 4 |
 | `tests/test_agent_bridge.py` | 5 |
+| `tests/test_coding_agent.py` | 6 |

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 
+from app.application.deploy.pipeline import render_prometheus
 from app.core.logging import configure_logging, get_logger
 from app.core.settings import get_settings
 from app.presentation.api.v1.errors import register_exception_handlers
@@ -36,6 +38,19 @@ app.include_router(api_router)
 @app.get("/health", tags=["system"])
 def health() -> dict:
     return {"status": "ok", "app": settings.app_name, "env": settings.app_env}
+
+
+@app.get("/ready", tags=["system"])
+def ready() -> dict:
+    """Readiness probe — distinct from liveness so orchestrators can gate traffic."""
+    return {"status": "ready", "app": settings.app_name, "version": app.version}
+
+
+@app.get("/metrics", tags=["system"])
+def metrics() -> PlainTextResponse:
+    """Prometheus text-format metrics for scraping into Grafana."""
+    body = render_prometheus({"up": 1, "info": 1})
+    return PlainTextResponse(body, media_type="text/plain; version=0.0.4")
 
 
 # -- Mount the NiceGUI UI onto the same FastAPI app -------------------------

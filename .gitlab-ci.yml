@@ -1,0 +1,40 @@
+stages: [test, build, deploy]
+
+variables:
+  IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+
+test:
+  stage: test
+  image: python:3.11-slim
+  before_script:
+    - cd dashboard
+    - pip install -e ".[dev]"
+  script:
+    - ruff check app/
+    - mypy app/ || true
+    - pytest -q
+
+build:
+  stage: build
+  image: docker:27
+  services: [docker:27-dind]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build -t "$IMAGE" ./dashboard
+    - docker push "$IMAGE"
+
+deploy:
+  stage: deploy
+  image: curlimages/curl:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
+  script:
+    - >
+      curl -fsS -X POST "$DEPLOY_URL/api/v1/deploy/webhook"
+      -H "Authorization: Bearer $DEPLOY_TOKEN" -H "Content-Type: application/json"
+      -d "{\"provider\":\"gitlab\",\"payload\":{\"ref\":\"refs/heads/$CI_COMMIT_BRANCH\",\"checkout_sha\":\"$CI_COMMIT_SHA\"}}"
+    - curl -fsS "$DEPLOY_URL/health"
+  environment:
+    name: $CI_COMMIT_BRANCH

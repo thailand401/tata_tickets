@@ -1,0 +1,48 @@
+name: CD
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ["v*"]
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build image & auto-deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./dashboard
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+      - name: Auto-deploy webhook to dashboard
+        if: ${{ secrets.DEPLOY_URL != '' }}
+        run: |
+          curl -fsS -X POST "${{ secrets.DEPLOY_URL }}/api/v1/deploy/webhook" \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"provider":"github","payload":{"ref":"${{ github.ref }}","after":"${{ github.sha }}"}}'
+
+      - name: Smoke health check
+        if: ${{ secrets.DEPLOY_URL != '' }}
+        run: curl -fsS "${{ secrets.DEPLOY_URL }}/health"

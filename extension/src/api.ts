@@ -23,6 +23,32 @@ export interface SyncResult {
   logs: Array<Record<string, unknown>>;
 }
 
+/** A single OpenSpec document of the task's bundle. */
+export interface SpecDocument {
+  title: string;
+  content: string;
+  data: Record<string, unknown>;
+}
+
+/** Context returned by `GET /agent/tasks/{id}/context`. */
+export interface TaskContext {
+  run: TaskRun;
+  documents: Record<string, SpecDocument>;
+}
+
+/** A persisted coding-agent session. */
+export interface AgentSession {
+  id: string;
+  run_id: string;
+  status: string;
+}
+
+/** One file the agent wrote during an attempt. */
+export interface AttemptFile {
+  path: string;
+  action: string;
+}
+
 export class DashboardClient {
   constructor(
     private readonly baseUrl: string,
@@ -127,5 +153,61 @@ export class DashboardClient {
       throw new Error("Sync returned no data");
     }
     return data;
+  }
+
+  // -- coding agent (Phase 6) ---------------------------------------------
+  async getContext(runId: string): Promise<TaskContext> {
+    const data = await this.request<TaskContext>(
+      "GET",
+      `/api/v1/agent/tasks/${runId}/context`,
+    );
+    if (!data) {
+      throw new Error("Context returned no data");
+    }
+    return data;
+  }
+
+  async startSession(runId: string): Promise<AgentSession> {
+    const data = await this.request<AgentSession>(
+      "POST",
+      `/api/v1/agent/tasks/${runId}/agent/session`,
+      {},
+    );
+    if (!data) {
+      throw new Error("startSession returned no data");
+    }
+    return data;
+  }
+
+  recordPlan(sessionId: string, plan: Record<string, unknown>): Promise<unknown> {
+    return this.request("POST", `/api/v1/agent/agent/sessions/${sessionId}/plan`, {
+      plan,
+    });
+  }
+
+  recordAttempt(
+    sessionId: string,
+    attempt: {
+      iteration: number;
+      phase: string;
+      status: string;
+      compile_output?: string;
+      files?: AttemptFile[];
+      error?: string | null;
+    },
+  ): Promise<unknown> {
+    return this.request(
+      "POST",
+      `/api/v1/agent/agent/sessions/${sessionId}/attempt`,
+      attempt,
+    );
+  }
+
+  finishSession(sessionId: string, status: string, summary: string): Promise<unknown> {
+    return this.request(
+      "POST",
+      `/api/v1/agent/agent/sessions/${sessionId}/finish`,
+      { status, summary },
+    );
   }
 }

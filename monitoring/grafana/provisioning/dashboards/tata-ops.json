@@ -1,0 +1,33 @@
+{
+  "title": "Tata Dashboard — Operations",
+  "uid": "tata-ops",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Service Up",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "tata_up", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Healthy Deployments",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "tata_deployments_healthy", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Running Replicas",
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "targets": [{"expr": "tata_replicas_running", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Rolled Back",
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "targets": [{"expr": "tata_deployments_rolled_back", "refId": "A"}]
+    }
+  ]
+}

@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "publisher": "tata",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.90.0"
   },
   "categories": [
     "Other"
@@ -17,6 +17,7 @@
       { "command": "tata.login", "title": "Tata: Login to Dashboard" },
       { "command": "tata.logout", "title": "Tata: Logout" },
       { "command": "tata.pullTask", "title": "Tata: Pull Next Task" },
+      { "command": "tata.runAgent", "title": "Tata: Run Autonomous Agent" },
       { "command": "tata.pushProgress", "title": "Tata: Push Progress" },
       { "command": "tata.pushLog", "title": "Tata: Push Log" },
       { "command": "tata.pushCommit", "title": "Tata: Push Commit" },
@@ -48,6 +49,36 @@
           "type": "number",
           "default": 5000,
           "description": "Realtime sync polling interval in milliseconds."
+        },
+        "tata.codingStandardPath": {
+          "type": "string",
+          "default": "CODING_STANDARD.md",
+          "description": "Workspace-relative path to the coding standard the agent reads."
+        },
+        "tata.compileCommand": {
+          "type": "string",
+          "default": "",
+          "description": "Shell command the agent runs to compile/build the project (required to run the agent)."
+        },
+        "tata.testCommand": {
+          "type": "string",
+          "default": "",
+          "description": "Optional shell command the agent runs to verify the code; must also pass before commit."
+        },
+        "tata.maxFixIterations": {
+          "type": "number",
+          "default": 5,
+          "description": "Maximum code → compile → fix iterations before the agent gives up."
+        },
+        "tata.commitMessageTemplate": {
+          "type": "string",
+          "default": "feat({category}): {task_key} {title}",
+          "description": "Commit message template. Placeholders: {task_key}, {title}, {category}."
+        },
+        "tata.autoCommit": {
+          "type": "boolean",
+          "default": true,
+          "description": "Commit the generated code automatically on success (no push). Disable to leave changes staged for manual commit."
         }
       }
     }
@@ -58,7 +89,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/vscode": "^1.85.0",
+    "@types/vscode": "^1.90.0",
     "typescript": "^5.4.0"
   }
 }

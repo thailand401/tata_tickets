@@ -1,0 +1,21 @@
+# docker-compose.dev.yml — development override.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Mounts source for live reload and enables debug logging.
+services:
+  dashboard:
+    build:
+      target: dev
+    volumes:
+      - ./dashboard/app:/app/app:ro
+    environment:
+      LOG_LEVEL: DEBUG
+      RELOAD: "1"
+    restart: "no"
+
+  prometheus:
+    restart: "no"
+
+  grafana:
+    restart: "no"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin

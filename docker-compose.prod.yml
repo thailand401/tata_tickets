@@ -1,0 +1,30 @@
+# docker-compose.prod.yml — production override.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Adds resource limits, log rotation, and strict restart policy.
+services:
+  dashboard:
+    restart: always
+    environment:
+      LOG_LEVEL: INFO
+    deploy:
+      replicas: 2
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+        reservations: { cpus: "0.25", memory: 256M }
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  prometheus:
+    restart: always
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  grafana:
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?set GRAFANA_PASSWORD}
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

@@ -13,6 +13,13 @@ flowchart LR
     B -->|Phase 3| C[OpenSpec bundle<br/>proposal · requirements · tasks ·<br/>architecture · migration · checklist]
     C -->|Phase 4| D[Task orchestration<br/>queue · retry · timeout · priority ·<br/>dependency · parallel · resume · cancel · log]
     D -->|Phase 5| E[VS Code bridge<br/>pull task · push progress/log/commit/<br/>review/error · realtime sync]
+    C -->|Phase 8| T[Test plan<br/>unit · integration · api · regression ·<br/>edge · mock · coverage · benchmark · report]
+    E -->|Phase 9| H[Self-heal loop<br/>errors · compile · review · test ·<br/>fix · loop · commit · update state]
+    C -->|Phase 10| K[Knowledge graph<br/>api · entity · database · architecture ·<br/>rule · prompt · convention · history · dependency]
+    K -.relevant context.-> E
+    D -->|Phase 11| M[Multi-agent fleet<br/>backend · frontend · flutter · python · node ·<br/>drupal · review · test · docs · planner]
+    M -.auto-assign.-> E
+    H -->|Phase 12| OP[Deploy & operate<br/>docker · ci/cd · github · gitlab · webhook ·<br/>auto-deploy · health · metrics · grafana ·<br/>rollback · backup · restore · scale]
 ```
 
 ## Phase status
@@ -24,6 +31,13 @@ flowchart LR
 | 3 | OpenSpec generation | Tech Spec → standard OpenSpec documents | **Done** |
 | 4 | Task orchestration | OpenSpec tasks → scheduled, controlled runs | **Done** |
 | 5 | VS Code bridge | Pull/push bridge between dashboard and editor | **Done** |
+| 6 | Autonomous coding agent | Plan → code → compile → fix → commit (no review) | **Done** |
+| 7 | Code review & feedback | Read-only review across security/arch/perf/bugs | **Done** |
+| 8 | Test generation | OpenSpec bundle → unit/integration/api/regression/edge/mock/coverage/benchmark + report | **Done** |
+| 9 | Self-healing loop | Errors → compile/review/test → AI fix → loop → pass → commit → update state | **Done** |
+| 10 | Knowledge graph | OpenSpec bundle → typed nodes/edges; agent fetches only relevant context | **Done** |
+| 11 | Multi-agent fleet | Specialist agents (backend/frontend/flutter/python/node/drupal/review/test/docs/planner) + scheduler auto-assigns | **Done** |
+| 12 | Deploy & operate | Docker/CI-CD/GitHub/GitLab/webhook/auto-deploy/health/metrics/Grafana/rollback/backup/restore/scale | **Done** |
 
 Detailed specs:
 
@@ -33,6 +47,12 @@ Detailed specs:
 - [Phase 3 — OpenSpec generation](phase-3-openspec.md)
 - [Phase 4 — Task orchestration](phase-4-orchestration.md)
 - [Phase 5 — VS Code bridge](phase-5-vscode-bridge.md)
+- [Phase 6 — Autonomous coding agent](phase-6-coding-agent.md)
+- [Phase 8 — Test generation](phase-8-test-generation.md)
+- [Phase 9 — Self-healing loop](phase-9-self-heal.md)
+- [Phase 10 — Knowledge Graph](phase-10-knowledge-graph.md)
+- [Phase 11 — Multi-agent fleet](phase-11-multi-agent.md)
+- [Phase 12 — Deploy & operate](phase-12-deploy.md)
 
 ## Architecture principles (apply to every phase)
 
@@ -48,7 +68,7 @@ Detailed specs:
 - **Event-driven & stateful** — every unit of work has an explicit state and
   emits events for monitoring and realtime sync.
 
-## Data model added by Phases 3–5
+## Data model added by Phases 3–9
 
 | Table | Phase | Purpose |
 |-------|-------|---------|
@@ -56,8 +76,20 @@ Detailed specs:
 | `spec_artifacts` | 3 | The six documents of a bundle (markdown + structured data) |
 | `task_runs` | 4 | One orchestrated execution of an OpenSpec task |
 | `task_logs` | 4/5 | Log / progress / commit / review / error / state entries |
+| `agent_sessions` | 6 | One run of the coding-agent loop for a task run |
+| `agent_attempts` | 6 | Each plan/code/compile/fix/commit attempt within a session |
+| `test_plans` | 8 | A test plan generated from an OpenSpec bundle |
+| `test_suites` | 8 | Per-kind suites (unit/integration/api/regression/edge/mock/benchmark) |
+| `test_cases` | 8 | Planned given/when/then cases within a suite |
+| `repair_sessions` | 9 | One self-healing run for a task run (errors → fix → commit) |
+| `repair_steps` | 9 | Each compile/review/test/fix/commit gate within a session |
+| `agents.role` | 11 | Each agent's specialist role (backend … planner, generalist) |
+| `task_runs.role` | 11 | The specialist role the scheduler assigned a run to |
+| `deployments` | 12 | One versioned release of a bundle to an environment |
+| `backups` | 12 | Database/artifacts snapshots for restore/rollback |
+| `webhook_events` | 12 | Normalized GitHub/GitLab pushes that may auto-deploy |
 
-Migrations: `0005_openspec.sql`, `0006_orchestration.sql` (apply after `0004`).
+Migrations: `0005_openspec.sql`, `0006_orchestration.sql`, `0007_coding_agent.sql`, `0008_testgen.sql`, `0009_self_heal.sql`, `0010_knowledge.sql`, `0011_agents.sql`, `0012_deploy.sql` (apply after `0004`).
 
 ## Tests
 
@@ -73,3 +105,9 @@ cd dashboard
 - `tests/test_openspec.py` — Phase 3
 - `tests/test_orchestrator.py` — Phase 4
 - `tests/test_agent_bridge.py` — Phase 5
+- `tests/test_coding_agent.py` — Phase 6
+- `tests/test_testgen.py` — Phase 8
+- `tests/test_self_heal.py` — Phase 9
+- `tests/test_knowledge.py` — Phase 10
+- `tests/test_fleet.py` — Phase 11
+- `tests/test_deploy.py` — Phase 12

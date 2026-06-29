@@ -128,3 +128,213 @@ class RunState(str, Enum):
     TIMED_OUT = "timed_out"
     CANCELLED = "cancelled"
     DEAD = "dead"                # exhausted retries, terminal failure
+
+
+# =====================================================================
+# Phase 6 — Autonomous coding agent
+# =====================================================================
+class AgentSessionStatus(str, Enum):
+    """Lifecycle of one run of the coding-agent loop for a task run."""
+
+    PLANNING = "planning"
+    CODING = "coding"
+    COMPILING = "compiling"
+    FIXING = "fixing"
+    COMMITTING = "committing"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class AgentAttemptPhase(str, Enum):
+    """Which step of the agent loop an attempt records."""
+
+    PLAN = "plan"
+    CODE = "code"
+    COMPILE = "compile"
+    FIX = "fix"
+    COMMIT = "commit"
+
+
+class AgentAttemptStatus(str, Enum):
+    """Outcome of a single agent attempt."""
+
+    PASS = "pass"
+    FAIL = "fail"
+
+
+# =====================================================================
+# Phase 8 — Test generation
+# =====================================================================
+class TestPlanStatus(str, Enum):
+    """Lifecycle of a generated test plan (documentation only)."""
+
+    DRAFT = "draft"
+    GENERATING = "generating"
+    READY = "ready"
+    FAILED = "failed"
+
+
+class TestKind(str, Enum):
+    """The categories of test suite produced from an OpenSpec bundle."""
+
+    UNIT = "unit"
+    INTEGRATION = "integration"
+    API = "api"
+    REGRESSION = "regression"
+    EDGE_CASE = "edge_case"
+    MOCK = "mock"
+    BENCHMARK = "benchmark"
+
+
+class TestCaseStatus(str, Enum):
+    """Outcome a generated case is expected to assert (documentation only)."""
+
+    PLANNED = "planned"
+    GENERATED = "generated"
+    SKIPPED = "skipped"
+
+
+# =====================================================================
+# Phase 9 — Self-healing loop (receive errors -> fix -> pass -> commit)
+# =====================================================================
+class RepairSessionStatus(str, Enum):
+    """Lifecycle of one self-healing run: errors -> compile/review/test -> fix -> commit."""
+
+    RECEIVING = "receiving"      # errors received, loop not yet started
+    COMPILING = "compiling"      # building the changed code
+    REVIEWING = "reviewing"      # static/AI review gate
+    TESTING = "testing"          # test gate
+    FIXING = "fixing"            # AI applying a fix before the next loop
+    COMMITTING = "committing"    # all gates green, committing
+    PASSED = "passed"            # committed + run state updated (terminal)
+    FAILED = "failed"            # iterations exhausted / aborted (terminal)
+
+
+class RepairGate(str, Enum):
+    """Which gate a single repair step records as it loops to green."""
+
+    COMPILE = "compile"
+    REVIEW = "review"
+    TEST = "test"
+    FIX = "fix"
+    COMMIT = "commit"
+
+
+class RepairResult(str, Enum):
+    """Outcome of a single repair step."""
+
+    PASS = "pass"
+    FAIL = "fail"
+
+
+# =====================================================================
+# Phase 10 — Knowledge Graph (relevant context, not whole source)
+# =====================================================================
+class KnowledgeKind(str, Enum):
+    """The kinds of node stored in the project knowledge graph."""
+
+    API = "api"                      # endpoints, contracts, surfaces
+    ENTITY = "entity"                # domain models / data structures
+    DATABASE = "database"            # tables, schemas, migrations
+    ARCHITECTURE = "architecture"    # components, layers, decisions
+    BUSINESS_RULE = "business_rule"  # requirements / constraints
+    PROMPT = "prompt"                # versioned prompt templates
+    CONVENTION = "convention"        # coding standards, patterns
+    HISTORY = "history"              # changes, runs, past sessions
+    DEPENDENCY = "dependency"        # external libs / services
+
+
+class KnowledgeEdgeKind(str, Enum):
+    """How two knowledge nodes relate (a directed edge source -> target)."""
+
+    DEPENDS_ON = "depends_on"        # source needs target
+    REFERENCES = "references"        # source mentions target
+    IMPLEMENTS = "implements"        # source realises target
+    OWNS = "owns"                    # source contains target
+    DERIVED_FROM = "derived_from"    # source generated from target
+    RELATES_TO = "relates_to"        # generic association
+
+
+# =====================================================================
+# Phase 11 — Multi-agent fleet (scheduler auto-assigns to specialists)
+# =====================================================================
+class AgentRole(str, Enum):
+    """A specialist agent's role; the scheduler routes tasks to one of these."""
+
+    BACKEND = "backend"          # services, endpoints, business logic
+    FRONTEND = "frontend"        # web UI, pages, components
+    FLUTTER = "flutter"          # Flutter / Dart mobile & desktop apps
+    PYTHON = "python"            # Python services, scripts, data work
+    NODE = "node"                # Node.js / TypeScript runtimes
+    DRUPAL = "drupal"            # Drupal / PHP CMS work
+    REVIEW = "review"            # code review & feedback
+    TEST = "test"                # test generation & QA
+    DOCS = "docs"                # documentation & changelogs
+    PLANNER = "planner"          # planning, breakdown, orchestration
+    GENERALIST = "generalist"    # fallback when no specialist matches
+
+
+class AssignmentStatus(str, Enum):
+    """Whether a task run has been matched to a fleet agent."""
+
+    ASSIGNED = "assigned"
+    UNASSIGNED = "unassigned"
+
+
+# =====================================================================
+# Phase 12 — Deploy & operate (CI/CD, auto-deploy, health, scale, backup)
+# =====================================================================
+class DeployStatus(str, Enum):
+    """State machine for one deployment of a bundle to an environment."""
+
+    PENDING = "pending"          # queued, image not built yet
+    BUILDING = "building"        # CI building the image
+    DEPLOYING = "deploying"      # rolling the image out
+    HEALTHY = "healthy"          # health check passed (live)
+    DEGRADED = "degraded"        # health check failing
+    FAILED = "failed"            # deploy failed
+    ROLLED_BACK = "rolled_back"  # superseded / reverted to a previous release
+
+
+class DeployTrigger(str, Enum):
+    """What kicked off a deployment."""
+
+    MANUAL = "manual"            # dashboard / CLI
+    GITHUB = "github"            # GitHub push/release webhook
+    GITLAB = "gitlab"            # GitLab push webhook
+    AUTO = "auto"                # auto-deploy after green CI
+    ROLLBACK = "rollback"        # created by a rollback
+
+
+class DeployEnv(str, Enum):
+    """Target environment for a deployment."""
+
+    DEV = "dev"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+
+class HealthStatus(str, Enum):
+    """Outcome of a health check probe."""
+
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    DOWN = "down"
+
+
+class BackupKind(str, Enum):
+    """What a backup snapshot captures."""
+
+    DATABASE = "database"
+    ARTIFACTS = "artifacts"
+    FULL = "full"
+
+
+class BackupStatus(str, Enum):
+    """Lifecycle of a backup snapshot."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    RESTORED = "restored"

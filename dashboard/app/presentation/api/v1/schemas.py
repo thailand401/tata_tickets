@@ -227,3 +227,135 @@ class AgentError(BaseModel):
 class AgentComplete(BaseModel):
     summary: str = ""
     result: dict = Field(default_factory=dict)
+
+
+# -- coding agent (Phase 6) ------------------------------------------------
+class AgentPlanIn(BaseModel):
+    plan: dict = Field(default_factory=dict)
+
+
+class AgentAttemptIn(BaseModel):
+    iteration: int = Field(default=1, ge=0)
+    phase: str = Field(min_length=1)  # plan | code | compile | fix | commit
+    status: str = Field(min_length=1)  # pass | fail
+    compile_output: str = ""
+    files: list[dict] = Field(default_factory=list)
+    error: str | None = None
+
+
+class AgentSessionFinish(BaseModel):
+    status: str = Field(min_length=1)  # succeeded | failed
+    summary: str = ""
+
+
+# -- test generation (Phase 8) ---------------------------------------------
+class TestGenGenerate(BaseModel):
+    coverage_target: int = Field(default=80, ge=0, le=100)
+
+
+# -- self-healing loop (Phase 9) -------------------------------------------
+class RepairStart(BaseModel):
+    errors: str = Field(default="", description="The build/test errors received")
+    max_iterations: int = Field(default=5, ge=1, le=20)
+
+
+class RepairStepIn(BaseModel):
+    iteration: int = Field(default=1, ge=0)
+    gate: str = Field(min_length=1)  # compile | review | test | fix | commit
+    result: str = Field(min_length=1)  # pass | fail
+    output: str = ""
+    files: list[dict] = Field(default_factory=list)
+    error: str | None = None
+
+
+class RepairFinish(BaseModel):
+    status: str = Field(min_length=1)  # passed | failed
+    commit_sha: str | None = None
+    summary: str = ""
+
+
+# -- knowledge graph (Phase 10) --------------------------------------------
+class KnowledgeIngest(BaseModel):
+    workspace_id: str | None = None
+
+
+class KnowledgeNodeIn(BaseModel):
+    kind: str = Field(min_length=1)  # api|entity|database|architecture|...
+    key: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    summary: str = ""
+    tags: list[str] = Field(default_factory=list)
+    data: dict = Field(default_factory=dict)
+    workspace_id: str | None = None
+    bundle_id: str | None = None
+
+
+class KnowledgeNodeUpdate(BaseModel):
+    title: str | None = None
+    summary: str | None = None
+    tags: list[str] | None = None
+    data: dict | None = None
+
+
+class KnowledgeLinkIn(BaseModel):
+    source_id: str = Field(min_length=1)
+    target_id: str = Field(min_length=1)
+    kind: str = "relates_to"
+    weight: float = Field(default=1.0, ge=0)
+
+
+class KnowledgeQuery(BaseModel):
+    text: str = ""
+    kinds: list[str] | None = None
+    bundle_id: str | None = None
+    workspace_id: str | None = None
+    limit: int = Field(default=8, ge=1, le=50)
+    hops: int = Field(default=1, ge=0, le=3)
+
+
+# -- agent fleet (Phase 11) ------------------------------------------------
+class FleetSeed(BaseModel):
+    workspace_id: str | None = None
+
+
+class FleetAssign(BaseModel):
+    workspace_id: str | None = None
+
+
+class FleetMatch(BaseModel):
+    title: str = Field(min_length=1)
+    category: str = "backend"
+
+
+# -- deploy & operate (Phase 12) -------------------------------------------
+class DeployIn(BaseModel):
+    bundle_id: str | None = None
+    environment: str = "staging"  # dev | staging | production
+    commit_sha: str | None = None
+    trigger: str = "manual"
+    repo: str = "ghcr.io/tata/dashboard"
+    workspace_id: str | None = None
+
+
+class HealthCheckIn(BaseModel):
+    probes: list[dict] = Field(default_factory=list)  # [{name, ok}]
+
+
+class ScaleIn(BaseModel):
+    replicas: int = Field(default=1, ge=1, le=50)
+
+
+class WebhookIn(BaseModel):
+    provider: str = "github"  # github | gitlab
+    payload: dict = Field(default_factory=dict)
+    workspace_id: str | None = None
+
+
+class BackupIn(BaseModel):
+    kind: str = "full"  # database | artifacts | full
+    location: str = ""
+    workspace_id: str | None = None
+
+
+class RestoreIn(BaseModel):
+    workspace_id: str | None = None

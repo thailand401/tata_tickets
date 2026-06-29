@@ -16,7 +16,8 @@ into orchestrated runs. Provides the full set of cross-cutting controls:
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
 from typing import Any
 
 from app.application.orchestration.classifier import classify_category, select_agent
@@ -26,6 +27,7 @@ from app.application.orchestration.executor import (
     StubTaskExecutor,
     TaskExecutor,
 )
+from app.application.orchestration.scheduler import match_role
 from app.application.rbac import rbac
 from app.application.recorder import record_audit, record_event
 from app.core.exceptions import NotFoundError, OrchestrationError, ValidationError
@@ -107,6 +109,9 @@ class OrchestratorService:
                 default=TaskCategory(task.get("category", TaskCategory.BACKEND.value)),
             )
             agent = select_agent(category, agents)
+            role = match_role(
+                f"{task.get('title', '')} {task.get('description', '')}", category.value
+            )
             run = self._runs.create(
                 {
                     "bundle_id": bundle_id,
@@ -114,6 +119,7 @@ class OrchestratorService:
                     "task_key": task.get("key"),
                     "title": task.get("title", ""),
                     "category": category.value,
+                    "role": role.value,
                     "state": RunState.PENDING.value,
                     "priority": task.get("priority", TicketPriority.MEDIUM.value),
                     "depends_on": task.get("depends_on", []),

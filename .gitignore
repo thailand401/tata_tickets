@@ -27,3 +27,11 @@ htmlcov/
 .idea/
 .DS_Store
 *.log
+
+# Node / extension
+node_modules/
+extension/out/
+
+# Script runtime
+.run/
+.logs/
